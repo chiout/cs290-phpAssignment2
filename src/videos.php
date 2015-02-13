@@ -64,6 +64,8 @@ if ($flag1 === true) {
   $category=$_POST['category'];
   $length=$_POST['length'];
 
+  $category = strtolower($category); // makes all letters lowercase to avoid duplication errors later
+ 
   if (!($add = $connect->prepare("INSERT INTO inventory(name, category, length) VALUES (?, ?, ?)"))) {
     echo "Insert Preparation Error";
   }
@@ -89,6 +91,7 @@ if ($flag1 === true) {
       </form>
     </p>
 <?php
+/* deletes ALL videos */
 if (isset($_POST['deleteAll']) && $_POST['deleteAll']== "Delete All" ) {
  
   if (!($del = $connect->prepare("DELETE FROM inventory"))) {
@@ -103,7 +106,9 @@ if (isset($_POST['deleteAll']) && $_POST['deleteAll']== "Delete All" ) {
   $del->close();
   $_POST = array(); // clear the array just in case
 }
+/* deletes ALL videos */
 
+/* print out videos if they exist */
 if (!($count = $connect->prepare("SELECT COUNT(*) FROM inventory"))) {
   echo "Insert Preparation Error";
 }
@@ -121,32 +126,63 @@ $count->fetch();
 
 $count->close();
 
+echo "<h3>Current Movies in Inventory</h3>";
+
 if ($number > 0) {
 
-  echo "<table border=1>";
+  echo "<form method=\"POST\" action=\"videos.php\"><select name=\"selCat\">";
 
-  if (!($ret = $connect->prepare("SELECT id, name, category, length, rented FROM inventory"))) {
+  $categories = array();
+
+  if (!($cat = $connect->prepare("SELECT category FROM inventory"))) {
     echo "Insert Preparation Error";
   }
  
-  if (!($ret->execute())) {
+  if (!($cat->execute())) {
     echo "Execute Error";
   } 
 
-  if (!($ret->bind_result($vId, $vidN, $vidC, $vidL, $vidR))) {
+  if (!($cat->bind_result($vidCat))) {
     echo "Error retrieving results";
   }
 
-  while ($ret->fetch()) {
+  while ($cat->fetch()) {
+    $flagS = false;
 
-    //if ($vidR == 1)
+    $vidCat = ucwords($vidCat); // capitalizes first letter
+// this makes sure that all letters in the same words have the same case
+// minimizes case-sensitive issue with comparisons
 
-    echo "<tr><td>$vidN<td>$vidC<td>$vidL<td>$vidR<td><form method=\"POST\" action=\"videos.php\"><input type=\"hidden\" name=\"id\" value=\"$vId\"><input type=\"submit\" name=\"deleteOne\" value=\"Delete\"></form></td></tr>";
+    if (count($categories) === 0) {
+      $categories[] = $vidCat;
+    }
+    else {
+      foreach ($categories as $value) {
+        if ($value == $vidCat) {
+          $flagS = true;
+        }
+      }
+
+      if ($flagS === false) {
+          $categories[] = $vidCat;
+      }
+    }
   }
-  echo "</table>";
-  
-  $ret->close();
-// the code here should fetch the rows - fetching all rows for now to make sure code works
+
+  if (count($categories) !== 0) {
+    foreach ($categories as $value) {
+      echo "<option value=\"$value\">$value</option>";
+    }
+echo "<option value=\"all\">All Movies</option></select>";
+echo "<input type=\"submit\" value=\"Filter\"></form>";
+  }
+  else {
+    echo "Array Error"; // this should never execute, but put here just in case
+  }
+
+  $cat->close();
+// the above code takes in category input
+// the code below will print out the appropriate movies
 
   if (isset($_POST['id'])) {
     $vidId =  $_POST['id'];
@@ -168,8 +204,119 @@ if ($number > 0) {
   }
   // this deletes the video based on its id
 
-}
+  if (isset($_POST['check'])) {
+    $vidId2 =  $_POST['check'];
+    if (!($rent = $connect->prepare("SELECT rented FROM inventory WHERE id=(?)"))) {
+      echo "Insert Preparation Error";
+    }
+ 
+    if (!($rent->bind_param("i", $vidId2))) {
+      echo "Binding Parameters Error";
+    }
 
+    if (!($rent->execute())) {
+      echo "Execute Error";
+    } 
+
+    if (!($rent->bind_result($status))) {
+      echo "Error retrieving results";
+    }
+
+    $rent->fetch();
+    $rent->close();
+// first this checks to see what the value of rented is - 0 or 1 (false or true)
+// then it will change the value accordingly
+
+    if ($status == 1) {
+      if (!($rent = $connect->prepare("UPDATE inventory SET rented = 0 WHERE id=(?)"))) {
+        echo "Insert Preparation Error";
+      }
+    }
+    else {
+      if (!($rent = $connect->prepare("UPDATE inventory SET rented = 1 WHERE id=(?)"))) {
+        echo "Insert Preparation Error";
+      } 
+    }
+
+    if (!($rent->bind_param("i", $vidId2))) {
+      echo "Binding Parameters Error";
+    }
+
+    if (!($rent->execute())) {
+      echo "Execute Error";
+    } 
+    $rent->close();
+
+    $_POST = array();
+  }
+  // this updates the video based on its id
+
+
+  echo "<table cellpadding=5px>";
+  echo "<tr><th>Name<th>Category<th>Length (min)<th>Status<th>Check In/Out<th>Delete</th></tr>";
+
+  if (isset($_POST['selCat'])) {
+
+    $selectedCat = strtolower($_POST['selCat']);
+    $_POST = array(); // clear the post array
+
+    if ($selectedCat !== "all") {
+
+// retrieves ALL the video data from the database
+      if (!($ret = $connect->prepare("SELECT id, name, category, length, rented FROM inventory WHERE category = ?"))) {
+        echo "Insert Preparation Error";
+      }
+
+       if (!($ret->bind_param("s", $selectedCat))) {
+        echo "Binding Parameters Error";
+      }
+    }
+    else {
+      if (!($ret = $connect->prepare("SELECT id, name, category, length, rented FROM inventory"))) {
+        echo "Insert Preparation Error";
+      }
+    }
+// if the user wants a specific category, the program will make a SQL query with the category
+// if the user wants to view ALL movies, the program will make a SQL query to return all movies
+// this if-else loop above controls which prepare call is made
+
+    if (!($ret->execute())) {
+      echo "Execute Error";
+    } 
+
+    if (!($ret->bind_result($vId, $vidN, $vidC, $vidL, $vidR))) {
+      echo "Error retrieving results";
+    }
+
+// fetches the results from the database 
+    while ($ret->fetch()) {
+
+    $vidN = strtolower($vidN);
+    $vidN = ucwords($vidN);
+    $vidC = ucwords($vidC);
+
+    if ($vidR == 1) {
+      $vidR = "Available";
+    }
+    else {
+      $vidR = "Checked Out";
+    }
+    // capitalizes first letter with the rest lowercase to make output look nicer
+
+      echo "<tr><td>$vidN<td>$vidC<td>$vidL<td>$vidR<td>";
+
+      echo "<form method=\"POST\" action=\"videos.php\"><input type=\"hidden\" name=\"check\" value=\"$vId\"><input type=\"submit\" value=\"Check In/Out\"></form><td>";
+// code above creates the button to check in/out movies
+      echo "<form method=\"POST\" action=\"videos.php\"><input type=\"hidden\" name=\"id\" value=\"$vId\"><input type=\"submit\" name=\"deleteOne\" value=\"Delete\"></form></td></tr>";
+// code above creates the button to delete movies
+
+    }
+    
+    echo "</table>";
+    $ret->close();
+// the code here should fetch the rows - fetching all rows for now to make sure code works
+  }
+}
 ?>
   </body>
 </html>
