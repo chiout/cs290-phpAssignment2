@@ -35,34 +35,52 @@ this connects to the database, connection code is based on lines 1-6 in Example 
 <?php
 $flag1 = false;
 
-if (isset($_POST['name'])|| isset($_POST['category']) || isset($_POST['length'])) {
-  if (empty($_POST['name']) || empty($_POST['category']) || empty($_POST['length'])) {
-    echo "Please fill in all required fields";
+if (isset($_POST['name']) || isset($_POST['category']) || isset($_POST['length'])) {
+  if (empty($_POST['name'])) {
+    echo "Name is a required field.";
     $_POST = array(); // empty the POST array
   }
   else {
-    if(!ctype_digit($_POST['length'])) {
-      echo "Length must be a numerical value";
-      $_POST = array();
-    }
-    else {
-      if ($_POST['length'] < 0) {
-        echo "Length must be a value greater than 0.";
+    if (!empty($_POST['length'])) {
+
+      if(!ctype_digit($_POST['length'])) {
+        echo "Length must be a positive numerical value";
         $_POST = array();
       }
       else {
-        $flag1 = true;
-      }
-    }    
-
+        if ($_POST['length'] < 0) {
+          echo "Length must be a value greater than 0.";
+          $_POST = array();
+        }
+        else {
+          $flag1 = true;
+        }
+      }    
+    }
+    else {
+      $flag1 = true;
+    }
   }
 
 }
 
 if ($flag1 === true) {
   $name=$_POST['name'];
-  $category=$_POST['category'];
-  $length=$_POST['length'];
+
+  if (empty($_POST['category'])) {
+    $category = "Not Available";
+  }
+  else {
+    $category=$_POST['category'];
+  }
+
+  if (empty($_POST['length'])) {
+    $length = 0;
+  }
+  else {
+    $length=$_POST['length'];
+  }
+// if no input is given for category or length fields, they are set to "Not Available" and 0 respectively
 
   $category = strtolower($category); // makes all letters lowercase to avoid duplication errors later
  
@@ -153,18 +171,20 @@ if ($number > 0) {
 // this makes sure that all letters in the same words have the same case
 // minimizes case-sensitive issue with comparisons
 
-    if (count($categories) === 0) {
-      $categories[] = $vidCat;
-    }
-    else {
-      foreach ($categories as $value) {
-        if ($value == $vidCat) {
-          $flagS = true;
-        }
+    if ($vidCat !== "Not Available") {
+      if (count($categories) === 0) {
+        $categories[] = $vidCat;
       }
+      else {
+        foreach ($categories as $value) {
+          if ($value == $vidCat) {
+            $flagS = true;
+          }
+        }
 
-      if ($flagS === false) {
-          $categories[] = $vidCat;
+        if ($flagS === false) {
+            $categories[] = $vidCat;
+        }
       }
     }
   }
@@ -316,6 +336,16 @@ echo "<input type=\"submit\" value=\"Filter\"></form>";
     $ret->close();
 // the code here should fetch the rows - fetching all rows for now to make sure code works
   }
+}
+else {
+  echo "<form><select>";
+  echo "<option></option>";  
+  echo "</select><input type=\"submit\" value=\"Filter\"></form>";
+
+  echo "<table cellpadding=5px>";
+  echo "<tr><th>Name<th>Category<th>Length (min)<th>Status<th>Check In/Out<th>Delete</th></tr>";
+  echo "</table>";
+// if there are no movies to display then a blank drop down menu and table will show
 }
 ?>
   </body>
