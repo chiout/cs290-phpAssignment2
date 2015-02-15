@@ -1,0 +1,19 @@
+Start: Sun, 15 Feb 2015 11:55:00 -0800 
+End: Sun, 15 Feb 2015 13:30:31 -0800 
+Tasks: Finished adding all comments and sources and finished testing 
+
+Start: Sat, 14 Feb 2015 00:29:00 -0800 
+End: Sat, 14 Feb 2015 01:23:42 -0800 
+Tasks: Did testing and then modified some features to be compliant with the test
+
+Start: Fri, 13 Feb 2015 11:41:00 -0800 
+End: Fri, 13 Feb 2015 14:06:40 -0800 
+Tasks: Created drop down menu and tied display functionality to that, also added
+
+Start: Thu, 12 Feb 2015 20:43:00 -0800 
+End: Thu, 12 Feb 2015 23:12:56 -0800 
+Tasks: Added functionality to delete the table and to display all the videos and
+
+Start: Thu, 12 Feb 2015 12:05:00 -0800 
+End: Thu, 12 Feb 2015 14:08:05 -0800 
+Tasks: Began working, created functionality to add videos to database 
